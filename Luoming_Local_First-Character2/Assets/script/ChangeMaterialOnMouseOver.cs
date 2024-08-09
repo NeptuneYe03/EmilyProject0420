@@ -11,6 +11,7 @@ public class ChangeMaterialOnMouseOver : MonoBehaviour
     private void Start()
     {
         // 保存原始的物体材质
+        if(originalMaterial != null)
         originalMaterial = GetComponent<Renderer>().material;
     }
 
