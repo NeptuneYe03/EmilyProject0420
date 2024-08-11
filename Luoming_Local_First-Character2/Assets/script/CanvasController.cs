@@ -1,30 +1,51 @@
 using UnityEngine;
 using UnityEngine.UI;
+using StarterAssets;
+using System.Collections;
 
 public class CanvasController : MonoBehaviour
 {
     public GameObject taskButtonCanvas; // 初始Canvas
     public GameObject canvas2; // 第二个Canvas
     public GameObject canvas1; // 第一个游戏Canvas
-    public GameObject successCanvas; // 成功Canvas
+    public GameObject successCanvas; // 成功Canvas，WinConfetti是其子对象
 
-    public Button taskButton; // TaskButtonCanvas中的TaskButton
     public Button goButton; // Canvas2中的GoButton
     public Button successButton; // SuccessCanvas中的SuccessButton
 
     public GameObject[] boxes; // Canvas1中的6个Box
     public Sprite[] iconSprites; // 对应的6个IconImage
-    public GameObject particleEffectPrefab; // 粒子效果预制体
+    //public GameObject particleEffectPrefab; // 粒子效果预制体，不再需要单独管理
+
+    private FirstPersonController playerController; // 引用第一人称控制器脚本
+    private bool isCursorLocked = true;
 
     private void Start()
     {
         // 初始化设置
         ShowOnlyTaskButtonCanvas();
 
+        // 获取第一人称控制器脚本
+        playerController = FindObjectOfType<FirstPersonController>();
+
         // 添加按钮点击事件
-        taskButton.onClick.AddListener(OnTaskButtonClicked);
         goButton.onClick.AddListener(OnGoButtonClicked);
         successButton.onClick.AddListener(OnSuccessButtonClicked);
+    }
+
+    private void Update()
+    {
+        // 检查Canvas1中的所有Box是否都被填满
+        if (canvas1.activeSelf && AreAllBoxesFilled())
+        {
+            ShowOnlySuccessCanvas();
+        }
+
+        // 检查是否按下Q键
+        if (Input.GetKeyDown(KeyCode.Q))
+        {
+            ShowTaskButtonAndCanvas2();
+        }
     }
 
     public void ShowOnlyTaskButtonCanvas()
@@ -33,6 +54,8 @@ public class CanvasController : MonoBehaviour
         canvas2.SetActive(false);
         canvas1.SetActive(false);
         successCanvas.SetActive(false);
+
+        LockCursor(true); // 锁定鼠标控制视角
     }
 
     public void ShowTaskButtonAndCanvas2()
@@ -41,6 +64,8 @@ public class CanvasController : MonoBehaviour
         canvas2.SetActive(true);
         canvas1.SetActive(false);
         successCanvas.SetActive(false);
+
+        LockCursor(false); // 解锁鼠标，用于UI交互
     }
 
     public void ShowOnlyCanvas1()
@@ -49,6 +74,8 @@ public class CanvasController : MonoBehaviour
         canvas2.SetActive(false);
         canvas1.SetActive(true);
         successCanvas.SetActive(false);
+
+        LockCursor(true); // 锁定鼠标控制视角
     }
 
     public void ShowOnlySuccessCanvas()
@@ -56,12 +83,9 @@ public class CanvasController : MonoBehaviour
         taskButtonCanvas.SetActive(false);
         canvas2.SetActive(false);
         canvas1.SetActive(false);
-        successCanvas.SetActive(true);
-    }
+        successCanvas.SetActive(true); // 显示SuccessCanvas和它的子对象，包括WinConfetti
 
-    public void OnTaskButtonClicked()
-    {
-        ShowTaskButtonAndCanvas2();
+        LockCursor(false); // 解锁鼠标，用于UI交互
     }
 
     public void OnGoButtonClicked()
@@ -72,15 +96,6 @@ public class CanvasController : MonoBehaviour
     public void OnSuccessButtonClicked()
     {
         ShowOnlyTaskButtonCanvas();
-    }
-
-    private void Update()
-    {
-        // 检查Canvas1中的所有Box是否都被填满
-        if (canvas1.activeSelf && AreAllBoxesFilled())
-        {
-            ShowOnlySuccessCanvas();
-        }
     }
 
     private bool AreAllBoxesFilled()
@@ -95,22 +110,29 @@ public class CanvasController : MonoBehaviour
         return true;
     }
 
-    // 将图标添加到指定的Box中并播放粒子效果
-    public void AddIconToBox(int boxIndex)
+    private void LockCursor(bool lockCursor)
     {
-        if (boxIndex >= 0 && boxIndex < boxes.Length)
-        {
-            // 添加IconImage
-            Image boxImage = boxes[boxIndex].GetComponent<Image>();
-            if (boxImage != null && boxIndex < iconSprites.Length)
-            {
-                boxImage.sprite = iconSprites[boxIndex];
-            }
+        isCursorLocked = lockCursor;
 
-            // 创建并播放粒子效果
-            GameObject particleEffect = Instantiate(particleEffectPrefab, boxes[boxIndex].transform.position, Quaternion.identity);
-            particleEffect.transform.SetParent(boxes[boxIndex].transform, false);
-            Destroy(particleEffect, 2f); // 确保粒子效果在一段时间后被销毁
+        if (isCursorLocked)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+
+            if (playerController != null)
+            {
+                playerController.enabled = true; // 启用人物视角控制
+            }
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+
+            if (playerController != null)
+            {
+                playerController.enabled = false; // 禁用人物视角控制
+            }
         }
     }
 }
